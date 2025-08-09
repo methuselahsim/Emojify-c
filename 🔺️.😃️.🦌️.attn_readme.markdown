@@ -1,0 +1,143 @@
+# Emoji Prediction with LSTM and Attention 😃⚾🍴
+
+Welcome to the **Emoji Prediction** project! 🎉 This C program uses an LSTM with multi-head attention to predict emojis (like ❤️, 😃, or 🍴) from text sentences, leveraging GloVe word embeddings. Whether you're a user wanting to add some emoji flair ✨ to your text or a developer looking to tweak a neural network 🧠, this guide has you covered!
+
+## 🚀 Overview
+This program:
+- **Reads** sentences and labels from CSV files 📄
+- **Uses** GloVe embeddings to represent words 📚
+- **Trains** an LSTM with attention to predict one of five emojis: ❤️ (Heart), ⚾ (Baseball), 😃 (Grinning Face), 😞 (Disappointed Face), or 🍴 (Fork and Knife) 🎯
+- **Outputs** predictions and a confusion matrix to `output.txt` 📊
+- **Generates** `vocab.txt` (vocabulary) and `model.txt` (trained weights) 💾
+
+It's perfect for sentiment analysis or adding fun emojis to text! 😄
+
+## 🛠️ Setup
+### Prerequisites
+- **C Compiler**: GCC or Clang (e.g., `gcc -o emojify_reader emojify_reader.c -lm`) 🔧
+- **GloVe File**: Download `glove.6B.50d.txt` (50-dimensional embeddings) from [Stanford GloVe](https://nlp.stanford.edu/projects/glove/) 📥
+- **Input Files**:
+  - `labels.csv`: Comma-separated emoji labels (0–4) 🏷️
+  - `sentences.csv`: Sentences in quotes (e.g., `'I love you','great job'`) 📝
+- **UTF-8 Editor**: To view emojis in `output.txt` (e.g., VS Code, Notepad++) 🖥️
+
+### Compilation
+```bash
+gcc -o emojify_reader emojify_reader.c -lm
+```
+The `-lm` flag links the math library for functions like `exp` and `tanh`. 🧮
+
+## 📝 Usage
+### Training Mode
+Train a new model and save weights to `model.txt`:
+```bash
+./emojify_reader labels.csv sentences.csv glove.6B.50d.txt --train output.txt
+```
+- **Inputs**:
+  - `labels.csv`: One label per line (e.g., `0,2,3`) corresponding to emojis ❤️, 😃, 😞, etc.
+  - `sentences.csv`: Sentences in quotes (e.g., `'I love you','great job'`)
+  - `glove.6B.50d.txt`: GloVe embeddings file
+- **Outputs**:
+  - `vocab.txt`: Vocabulary with special tokens (`[PAD]`, `[UNK]`, `[CLS]`, `[SEP]`) and emojis 📜
+  - `model.txt`: Trained LSTM weights (matrices like `Wf`, `Wy`) 💾
+  - `output.txt`: Predictions, actual vs. predicted emojis, and confusion matrix 📊
+
+### Inference Mode
+Use a pre-trained model:
+```bash
+./emojify_reader labels.csv sentences.csv glove.6B.50d.txt --load model.txt output.txt
+```
+- Loads weights from `model.txt` and predicts emojis without training 🔍
+
+### Example Output (`output.txt`)
+```
+Line 1: Sentence="I love you", Label=0, Emoji=❤️, Description=Heart
+Predicted: Label=0, Emoji=❤️, Description=Heart
+
+Line 2: Sentence="great job", Label=2, Emoji=😃, Description=Grinning Face
+Predicted: Label=2, Emoji=😃, Description=Grinning Face
+
+Confusion Matrix (Actual vs Predicted):
+    0  1  2  3  4
+0: 10  0  0  0  0  # ❤️ (Heart)
+1:  0  8  0  0  0  # ⚾ (Baseball)
+2:  0  0 12  0  0  # 😃 (Grinning Face)
+3:  0  0  0  9  0  # 😞 (Disappointed Face)
+4:  0  0  0  0 11  # 🍴 (Fork and Knife)
+Accuracy: 0.9500
+```
+**Note**: Open `output.txt` in a UTF-8-compatible editor to see emojis correctly! 🖌️
+
+## 🧑‍💻 For Developers
+### Code Structure
+- **Main Components**:
+  - `read_glove`: Loads GloVe embeddings into `word_vectors` 📚
+  - `parse_sentences`: Extracts quoted sentences from `sentences.csv` ✂️
+  - `forward`: Runs LSTM with attention to predict emoji probabilities 🔄
+  - `backward`: Updates weights using backpropagation ⚙️
+  - `attention`: Implements multi-head attention for sequence processing 🧠
+  - `train_lstm`: Trains the model over `EPOCHS` iterations 🔍
+- **Key Parameters** (in `emojify_reader.c`):
+  - `EMBEDDING_DIM=50`: Matches GloVe 50d embeddings
+  - `HIDDEN_DIM=32`: LSTM hidden state size
+  - `MAX_EMOJIS=5`: Number of supported emojis
+  - `NUM_HEADS=4`: Attention heads
+  - `EPOCHS=50`: Training iterations (adjust for performance) ⏱️
+
+### Modifying the Code
+1. **Add More Emojis** 😎
+   - Update `MAX_EMOJIS` and `emoji_map` in `emojify_reader.c`:
+     ```c
+     #define MAX_EMOJIS 6
+     const char *emoji_map[MAX_EMOJIS][3] = {
+         {"0", "\xE2\x9D\xA4\xEF\xB8\x8F", "Heart"},
+         {"1", "\xE2\x9A\xBE", "Baseball"},
+         {"2", "\xF0\x9F\x98\x83", "Grinning Face"},
+         {"3", "\xF0\x9F\x98\x9E", "Disappointed Face"},
+         {"4", "\xF0\x9F\x8D\xB4", "Fork and Knife"},
+         {"5", "\xF0\x9F\x98\x8E", "Sunglasses Face"}
+     };
+     ```
+   - Update `labels.csv` to include new labels (e.g., 5 for 😎).
+   - Retrain the model with `--train`.
+
+2. **Change Embedding Size** 📏
+   - Use a different GloVe file (e.g., `glove.6B.100d.txt` for 100d embeddings).
+   - Update `EMBEDDING_DIM`:
+     ```c
+     #define EMBEDDING_DIM 100
+     ```
+   - Adjust weight matrices (e.g., `Wf`, `Wi`) to match new dimensions.
+
+3. **Improve Performance** ⚡
+   - Increase `EPOCHS` for better accuracy (e.g., `#define EPOCHS 200`).
+   - Optimize `matmul` with SIMD instructions or a library like BLAS.
+   - Reduce memory allocations by reusing buffers (already implemented in `init_buffers`).
+
+4. **Debugging** 🐞
+   - Check timing logs (e.g., `Forward pass took X.XXX ms`) to identify bottlenecks.
+   - Use a debugger (e.g., `gdb`) or add more `printf` statements in `forward`/`backward`.
+   - Validate input files for correct formatting.
+
+### File Formats
+- **labels.csv**:
+  ```
+  0,2,3,4,1
+  ```
+- **sentences.csv**:
+  ```
+  'I love you','great job','feeling sad','hungry now','play ball'
+  ```
+- **vocab.txt**: Lists special tokens, GloVe words, and emojis.
+- **model.txt**: Stores weight matrices (e.g., `Wf`, `Wy`) and biases.
+
+## ⚠️ Troubleshooting
+- **Garbled output in `output.txt`**: Ensure your editor supports UTF-8. Try adding a UTF-8 BOM (done in code) or use VS Code/Notepad++.
+- **Program hangs**: Check timing logs. If `attention` or `lstm_step` is slow, reduce `EPOCHS` or dataset size.
+- **Memory errors**: All allocations are checked; ensure sufficient RAM for large GloVe files.
+- **Invalid predictions**: Verify `labels.csv` and `sentences.csv` align and labels are 0–4.
+
+## 🌟 Contributing
+Want to add features like more emojis 😺 or interactive input? Fork the repo, make changes, and submit a pull request! 🚀
+
+Enjoy adding some emoji magic to your text! 🎈
